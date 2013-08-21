@@ -5,6 +5,7 @@
 #     FileName: fetch.py
 #         Desc: this is inspired by o3o, just use the yan.json from 
 #               https://github.com/turingou/o3o
+#               Thanks turning (https://github.com/turingou)
 #       Author: Mocker
 #        Email: Zuckerwooo@gmail.com
 #     HomePage: zuckonit.github.com
@@ -21,8 +22,10 @@ except ImportError:
 import os
 import sys
 
+__all__ = ['available', 'fetch']
+
 #face_file = os.path.expanduser('~/.yan.json')
-face_file = 'yan.json'
+face_file = 'yan.json'  #where is your yan.json
 
 def load_face(jsonfile):
     f = open(jsonfile)
@@ -32,10 +35,7 @@ def load_face(jsonfile):
 
 
 def _encode(tag):
-    try:
-       tag = unicode(tag)
-    except UnicodeDecodeError:
-       tag = tag.decode('utf8')
+    tag = unicode(tag) if isinstance(tag, unicode) else tag.decode('utf-8')
     return tag
 
 
@@ -45,18 +45,17 @@ def fetch(dface, tag):
     for face in faces:
         tags = face['tag'].split()
         if tag in tags:
-            for y in face['yan']:
-                print y.encode('utf-8')
-            return True
-    return False
+            return [_encode(f) for f in face['yan']]   #return if tag found
+    return []
 
 
-def get_tags(dface):
+def available():
+    dface = load_face(face_file)
     faces = dface['list']
     tags = []
     for face in faces:
         tags.append(face['tag'])
-    return tags
+    return [_encode(t) for t in tags]
 
 
 def usage():
@@ -74,15 +73,18 @@ def opt():
         return
     dface = load_face(face_file)
     if sys.argv[1] in ['-l', '-list', '--list']:
-        tags = get_tags(dface)
+        tags = available()
         for tag in tags:
-            print _encode(tag)
+            print tag
         return
-    for tag in sys.argv[1:]:
-        print '=====%s====='%tag
-        status = fetch(dface, tag)
-        if not status:
-            print u'no such %s face' % tag
+    for tag in sys.argv[1:]:  #that's why you can search multi tags at the same time
+        print '===== %s ====='%tag
+        faces = fetch(dface, tag)
+        if faces:
+            for f in faces:
+                print f
+        else:
+            print 'no such %s face' % tag
 
 
 if __name__ == '__main__':
